@@ -20,8 +20,9 @@ class HashTable:
     Implement this.
     """
 
-    def __init__(self, capacity):
-        # Your code here
+    def __init__(self, capacity=MIN_CAPACITY):
+        self.capacity = capacity
+        self.tbl = [None] * capacity
 
 
     def get_num_slots(self):
@@ -34,7 +35,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return self.capacity
 
 
     def get_load_factor(self):
@@ -51,9 +52,25 @@ class HashTable:
         FNV-1 Hash, 64-bit
 
         Implement this, and/or DJB2.
-        """
 
-        # Your code here
+        This is the pseudocode for fnv-1:
+        algorithm fnv-1 is
+            hash := FNV_offset_basis do
+
+            for each byte_of_data to be hashed
+                hash := hash × FNV_prime
+                hash := hash XOR byte_of_data
+
+            return hash 
+        """
+        # This is our offset basis
+        hval = 0xcbf29ce484222325
+        for byte in key:
+            #0x100000001b3 is our fnv prime
+            hval = hval * 0x100000001b3
+            hval = hval ^ ord(byte)
+        
+        return hval
 
 
     def djb2(self, key):
@@ -70,8 +87,8 @@ class HashTable:
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
-        #return self.fnv1(key) % self.capacity
-        return self.djb2(key) % self.capacity
+        return self.fnv1(key) % self.capacity
+        # return self.djb2(key) % self.capacity
 
     def put(self, key, value):
         """
@@ -81,7 +98,11 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        ind = self.hash_index(key)
+        if self.tbl[ind]:
+            self.tbl[ind].next = HashTableEntry(key, value)
+        else:
+            self.tbl[ind] = HashTableEntry(key, value)
 
 
     def delete(self, key):
@@ -103,7 +124,11 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        ind = self.hash_index(key)
+        entry = self.tbl[ind]
+
+        return entry.value
+
 
 
     def resize(self, new_capacity):
