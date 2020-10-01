@@ -20,8 +20,10 @@ class HashTable:
     Implement this.
     """
 
-    def __init__(self, capacity):
-        # Your code here
+    def __init__(self, capacity=MIN_CAPACITY):
+        self.capacity = capacity
+        self.tbl = [None] * capacity
+        self.num_items = 0
 
 
     def get_num_slots(self):
@@ -34,7 +36,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return self.capacity
 
 
     def get_load_factor(self):
@@ -43,7 +45,7 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        return self.num_items / self.capacity
 
 
     def fnv1(self, key):
@@ -51,9 +53,25 @@ class HashTable:
         FNV-1 Hash, 64-bit
 
         Implement this, and/or DJB2.
-        """
 
-        # Your code here
+        This is the pseudocode for fnv-1:
+        algorithm fnv-1 is
+            hash := FNV_offset_basis do
+
+            for each byte_of_data to be hashed
+                hash := hash × FNV_prime
+                hash := hash XOR byte_of_data
+
+            return hash 
+        """
+        # This is our offset basis
+        hval = 14695981039346656037
+        for byte in key:
+            #1099511628211 is our fnv prime
+            hval = hval * 1099511628211 
+            hval = hval ^ ord(byte)
+        
+        return hval % self.capacity
 
 
     def djb2(self, key):
@@ -70,8 +88,8 @@ class HashTable:
         Take an arbitrary key and return a valid integer index
         between within the storage capacity of the hash table.
         """
-        #return self.fnv1(key) % self.capacity
-        return self.djb2(key) % self.capacity
+        return self.fnv1(key) % self.capacity
+        # return self.djb2(key) % self.capacity
 
     def put(self, key, value):
         """
@@ -81,8 +99,38 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #get index for key
+        #search list for key
+        # if found overwrite value
+        # else insert it into the list
 
+        # if our load factor is greater than limit, resize automatically
+        if self.get_load_factor() > 0.7:
+            self.resize(self.capacity * 2)
+
+        # set our index variable and instantiate the item at that index we're working with
+        ind = self.hash_index(key)
+        new_item = self.tbl[ind]
+
+        #if the item is None, create our entry at that point; increment counter.
+        if new_item is None:
+            self.tbl[ind] = HashTableEntry(key, value)
+            self.num_items += 1
+            return
+        
+        # otherwise, as long as there is a next and as long as the item we're on isn't the key we're inserting,
+        # set our item to the next item in the chain
+        # if the key we have matches any in the chain we'll break out of the loop
+        while new_item.next and new_item.key != key:
+            new_item = new_item.next
+
+        # if we've passed the loop because we have a matching key, update with a new value
+        if new_item.key == key:
+            new_item.value = value
+        # otherwise we're at the end of the list and can just append to the end.
+        else:
+            new_item.next = HashTableEntry(key, value)
+            self.num_items += 1
 
     def delete(self, key):
         """
@@ -92,7 +140,29 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        # set our index variable and instantiate the item at that index we're checking to remove
+        # also create a pointer to the previous item in the list
+        ind = self.hash_index(key)
+        check = self.tbl[ind]
+        prev_item = None
+        #search list for key. if our item is none, we continue, otherwise we return warning.
+        if check is not None:
+            #as long as our item has a value, check for next. if true and if the keys dont match
+            # we'll shift our current pointer and previous pointers up one position
+            while check.next and check.key != key:
+                prev_item = check
+                check = check.next
+            # if the keys match, and if we are at the head, our new head will be the next item.
+            #otherwise set the previous items next pointer to our current next pointer. decrement counter.
+            if check.key == key:
+                if prev_item is None:
+                    self.tbl[ind] = check.next
+                else:
+                    prev_item.next = check.next
+                self.num_items -= 1
+        #else warning
+        else:
+            return 'That key is not located in the table.'
 
 
     def get(self, key):
@@ -103,7 +173,21 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #get index for key
+        #search list for key
+        #if found, return value
+        #else None
+        ind = self.hash_index(key)
+        check = self.tbl[ind]
+        # if there's nothing at that index. return None
+        if check is None:
+            return None
+
+        while check.next and check.key != key:
+            check = check.next
+        
+        return check.value if check.key == key else None
+
 
 
     def resize(self, new_capacity):
@@ -113,7 +197,21 @@ class HashTable:
 
         Implement this.
         """
-        # Your code here
+        #save an instance of our current table
+        curr_tbl = self.tbl
+        #create a new table with the updated capacity and set our current capacity to it
+        self.tbl = [None] * new_capacity
+        self.capacity = new_capacity
+        self.num_items = 0
+
+        # for every index on our current table
+        for ind in range(len(curr_tbl)):
+            # capture the node located at that index
+            current = curr_tbl[ind]
+            # and as long as the node is not equal to nothing, put the node onto the new table we created, and follow the next pointer to the next node
+            while current:
+                self.put(current.key, current.value)
+                current = current.next
 
 
 
